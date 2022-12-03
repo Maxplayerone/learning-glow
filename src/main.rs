@@ -106,59 +106,68 @@ fn main() {
     // Load the OpenGL function pointers
     gl::load_with(|symbol| gl_window.get_proc_address(symbol));
 
-    /*
-    let vertices : [f32; 12] = [
-        -0.5, -0.5, 0.0, //bottom left
-        0.5, -0.5, 0.0, //botom right
-        -0.5, 0.5, 0.0, //top left
-        0.5, 0.5, 0.0,//top right
-    ];
-    */
-    let vertices : [f32; 18] = [
+    let vertices_one : [f32; 9] = [
         -0.75, -0.5, 0.0,
         -0.25, -0.5, 0.0,
-        -0.5, 0.5, 0.0, 
+        -0.5, 0.0, 0.0,
+    ];
 
-        0.25, -0.5, 0.0, 
+    let vertices_two : [f32; 9] = [
+        0.25, -0.5, 0.0,
         0.75, -0.5, 0.0,
-        0.5, 0.5, 0.0,
+        0.5, 0.0, 0.0,
     ];
-
-    let indices : [u32; 6] = [
-        2, 0, 1,
-        2, 3, 1, 
-    ];
+    
 
     let vs = compile_shader(VS_SRC, gl::VERTEX_SHADER);
     let fs = compile_shader(FS_SRC, gl::FRAGMENT_SHADER);
     let program = link_program(vs, fs);
 
-    let mut vbo = 0;
-    let mut vao = 0;
-    let mut ebo = 0;
+    let mut vbos: [u32; 2] = [0, 0];
+    let mut vaos: [u32; 2] = [0, 0];
+
+    //to-do the first vao doesn't render the triangle
+    //when we initialize the second vbo and vaio
 
     unsafe{
-        //vertex array object
-        gl::GenVertexArrays(1, &mut vao);
-        gl::BindVertexArray(vao);
+        gl::GenVertexArrays(2, &mut vaos[0]);
+        gl::GenBuffers(2, &mut vbos[0]);
 
-        //vertex buffer
-        gl::GenBuffers(1, &mut vbo);
-        gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+        gl::BindVertexArray(vaos[0]);
+        gl::BindBuffer(gl::ARRAY_BUFFER, vbos[0]);
         gl::BufferData(
             gl::ARRAY_BUFFER, 
-            (18 * mem::size_of::<GLfloat>()) as GLsizeiptr,
-            mem::transmute(&vertices[0]), 
+            (9 * mem::size_of::<GLfloat>()) as GLsizeiptr,
+            mem::transmute(&vertices_one[0]), 
             gl::STATIC_DRAW);
+        let pos_attr = gl::GetAttribLocation(program, CString::new("position").unwrap().as_ptr());
+        gl::EnableVertexAttribArray(pos_attr as GLuint);
+        gl::VertexAttribPointer(
+            pos_attr as GLuint,
+            3,
+            gl::FLOAT,
+            gl::FALSE as GLboolean,
+            0,
+            ptr::null(),
+        );
 
-        //element buffer object
-        gl::GenBuffers(1, &mut ebo);
-        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+        gl::BindVertexArray(vaos[1]);
+        gl::BindBuffer(gl::ARRAY_BUFFER, vbos[1]);
         gl::BufferData(
-            gl::ELEMENT_ARRAY_BUFFER,
-            (6 * mem::size_of::<GLuint>()) as GLsizeiptr,
-            mem::transmute(&indices[0]),
+            gl::ARRAY_BUFFER,
+            (9 * mem::size_of::<GLfloat>()) as GLsizeiptr,
+            mem::transmute(&vertices_two[0]),
             gl::STATIC_DRAW,
+        );
+        let pos_attr = gl::GetAttribLocation(program, CString::new("position").unwrap().as_ptr());
+        gl::EnableVertexAttribArray(pos_attr as GLuint);
+        gl::VertexAttribPointer(
+            pos_attr as GLuint,
+            3,
+            gl::FLOAT,
+            gl::FALSE as GLboolean,
+            0,
+            ptr::null(),
         );
 
         //shader program
@@ -192,8 +201,8 @@ fn main() {
                         gl::DeleteProgram(program);
                         gl::DeleteShader(fs);
                         gl::DeleteShader(vs);
-                        gl::DeleteBuffers(1, &vbo);
-                        gl::DeleteVertexArrays(1, &vao);
+                        gl::DeleteBuffers(2, &vbos[0]);
+                        gl::DeleteVertexArrays(2, &vaos[1]);
                     }
                     *control_flow = ControlFlow::Exit
                 },
@@ -205,8 +214,10 @@ fn main() {
                     // Clear the screen to black
                     gl::ClearColor(0.4, 0.7, 0.3, 1.0);
                     gl::Clear(gl::COLOR_BUFFER_BIT);
-                    //gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
-                    gl::DrawArrays(gl::TRIANGLES, 0, 6);
+                    gl::BindVertexArray(vaos[0]);
+                    gl::DrawArrays(gl::TRIANGLES, 0, 3);
+                    gl::BindVertexArray(vaos[1]);
+                    gl::DrawArrays(gl::TRIANGLES, 0, 3);
                 }
                 gl_window.swap_buffers().unwrap();
             },
