@@ -23,6 +23,12 @@ void main() {
     out_color = vec4(1.0, 1.0, 1.0, 1.0);
 }";
 
+static FS_SRC_TWO: &'static str = "
+#version 150
+out vec4 out_color;
+void main() {
+    out_color = vec4(0.94, 1, 0.28, 1.0);
+}";
 
 fn compile_shader(src: &str, ty: GLenum) -> GLuint {
     let shader : u32;
@@ -123,6 +129,9 @@ fn main() {
     let fs = compile_shader(FS_SRC, gl::FRAGMENT_SHADER);
     let program = link_program(vs, fs);
 
+    let fs2 = compile_shader(FS_SRC_TWO, gl::FRAGMENT_SHADER);
+    let program2 = link_program(vs, fs2);
+
     let mut vbos: [u32; 2] = [0, 0];
     let mut vaos: [u32; 2] = [0, 0];
 
@@ -175,16 +184,6 @@ fn main() {
         gl::BindFragDataLocation(program, 0, CString::new("out_color").unwrap().as_ptr());
 
         //define the vertex buffer data
-        let pos_attr = gl::GetAttribLocation(program, CString::new("position").unwrap().as_ptr());
-        gl::EnableVertexAttribArray(pos_attr as GLuint);
-        gl::VertexAttribPointer(
-            pos_attr as GLuint,
-            3,
-            gl::FLOAT,
-            gl::FALSE as GLboolean,
-            0,
-            ptr::null(),
-        );
     }
 
     event_loop.run(move |event, _, control_flow| {
@@ -214,9 +213,15 @@ fn main() {
                     // Clear the screen to black
                     gl::ClearColor(0.4, 0.7, 0.3, 1.0);
                     gl::Clear(gl::COLOR_BUFFER_BIT);
+
                     gl::BindVertexArray(vaos[0]);
+                    gl::UseProgram(program);
+                    gl::BindFragDataLocation(program, 0, CString::new("out_color").unwrap().as_ptr());
                     gl::DrawArrays(gl::TRIANGLES, 0, 3);
+
                     gl::BindVertexArray(vaos[1]);
+                    gl::UseProgram(program2);
+                    gl::BindFragDataLocation(program2, 0, CString::new("out_color").unwrap().as_ptr());
                     gl::DrawArrays(gl::TRIANGLES, 0, 3);
                 }
                 gl_window.swap_buffers().unwrap();
