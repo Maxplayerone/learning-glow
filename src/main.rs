@@ -165,6 +165,7 @@ fn main() {
             0,
             ptr::null(),
         );
+        gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
     }
 
     event_loop.run(move |event, _, control_flow| {
