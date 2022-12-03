@@ -106,11 +106,22 @@ fn main() {
     // Load the OpenGL function pointers
     gl::load_with(|symbol| gl_window.get_proc_address(symbol));
 
+    /*
     let vertices : [f32; 12] = [
         -0.5, -0.5, 0.0, //bottom left
         0.5, -0.5, 0.0, //botom right
         -0.5, 0.5, 0.0, //top left
         0.5, 0.5, 0.0,//top right
+    ];
+    */
+    let vertices : [f32; 18] = [
+        -0.75, -0.5, 0.0,
+        -0.25, -0.5, 0.0,
+        -0.5, 0.5, 0.0, 
+
+        0.25, -0.5, 0.0, 
+        0.75, -0.5, 0.0,
+        0.5, 0.5, 0.0,
     ];
 
     let indices : [u32; 6] = [
@@ -136,7 +147,7 @@ fn main() {
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
         gl::BufferData(
             gl::ARRAY_BUFFER, 
-            (12 * mem::size_of::<GLfloat>()) as GLsizeiptr,
+            (18 * mem::size_of::<GLfloat>()) as GLsizeiptr,
             mem::transmute(&vertices[0]), 
             gl::STATIC_DRAW);
 
@@ -165,7 +176,6 @@ fn main() {
             0,
             ptr::null(),
         );
-        gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
     }
 
     event_loop.run(move |event, _, control_flow| {
@@ -195,7 +205,8 @@ fn main() {
                     // Clear the screen to black
                     gl::ClearColor(0.4, 0.7, 0.3, 1.0);
                     gl::Clear(gl::COLOR_BUFFER_BIT);
-                    gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
+                    //gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
+                    gl::DrawArrays(gl::TRIANGLES, 0, 6);
                 }
                 gl_window.swap_buffers().unwrap();
             },
