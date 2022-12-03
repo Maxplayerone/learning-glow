@@ -106,10 +106,16 @@ fn main() {
     // Load the OpenGL function pointers
     gl::load_with(|symbol| gl_window.get_proc_address(symbol));
 
-    let vertices : [f32; 9] = [
-        -0.5, -0.5, 0.0,
-        0.5, -0.5, 0.0,
-        0.0, 0.5, 0.0,
+    let vertices : [f32; 12] = [
+        -0.5, -0.5, 0.0, //bottom left
+        0.5, -0.5, 0.0, //botom right
+        -0.5, 0.5, 0.0, //top left
+        0.5, 0.5, 0.0,//top right
+    ];
+
+    let indices : [u32; 6] = [
+        2, 0, 1,
+        2, 3, 1, 
     ];
 
     let vs = compile_shader(VS_SRC, gl::VERTEX_SHADER);
@@ -118,6 +124,7 @@ fn main() {
 
     let mut vbo = 0;
     let mut vao = 0;
+    let mut ebo = 0;
 
     unsafe{
         //vertex array object
@@ -129,9 +136,19 @@ fn main() {
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
         gl::BufferData(
             gl::ARRAY_BUFFER, 
-            (9 * mem::size_of::<GLfloat>()) as GLsizeiptr,
+            (12 * mem::size_of::<GLfloat>()) as GLsizeiptr,
             mem::transmute(&vertices[0]), 
             gl::STATIC_DRAW);
+
+        //element buffer object
+        gl::GenBuffers(1, &mut ebo);
+        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+        gl::BufferData(
+            gl::ELEMENT_ARRAY_BUFFER,
+            (6 * mem::size_of::<GLuint>()) as GLsizeiptr,
+            mem::transmute(&indices[0]),
+            gl::STATIC_DRAW,
+        );
 
         //shader program
         gl::UseProgram(program);
@@ -177,7 +194,7 @@ fn main() {
                     // Clear the screen to black
                     gl::ClearColor(0.4, 0.7, 0.3, 1.0);
                     gl::Clear(gl::COLOR_BUFFER_BIT);
-                    gl::DrawArrays(gl::TRIANGLES, 0, 3);
+                    gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
                 }
                 gl_window.swap_buffers().unwrap();
             },
