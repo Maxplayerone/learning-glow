@@ -23,14 +23,25 @@ fn main() {
     gl::load_with(|symbol| gl_window.get_proc_address(symbol));
 
     let vertices: [f32; 18] = [
-        -0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 1.0,
+        -0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 
+        0.5, -0.5, 0.0, 0.0, 1.0, 0.0,
+        0.0, 0.5, 0.0, 0.0, 0.0, 1.0,
+    ];   
+   
+    //the triangle is upside down
+    let vertices: [f32; 18] = [
+        0.0, -0.5, 0.0, 1.0, 0.0, 0.0, 
+        -0.5, 0.5, 0.0, 0.0, 1.0, 0.0,
+        0.5, 0.5, 0.0, 0.0, 0.0, 1.0,
     ];
+
 
     let program = Program::new("src/shaders/basic.vs", "src/shaders/basic.fs");
     let mut vbo = 0;
     let mut vao = 0;
 
     let uniformLocation;
+    let uniform_vertex;
 
     unsafe {
         //vertex array object
@@ -72,8 +83,8 @@ fn main() {
             mem::transmute(3 * mem::size_of::<GLfloat>()),
         );
 
-        uniformLocation =
-            gl::GetUniformLocation(program.id(), CString::new("u_color").unwrap().as_ptr());
+        uniformLocation = gl::GetUniformLocation(program.id(), CString::new("u_color").unwrap().as_ptr());
+        uniform_vertex = gl::GetUniformLocation(program.id(), CString::new("offset_value").unwrap().as_ptr());
     }
 
     event_loop.run(move |event, _, control_flow| {
@@ -106,6 +117,7 @@ fn main() {
 
                     program.bind();
                     gl::Uniform4f(uniformLocation, 0.7, 0.4, 0.2, 1.0);
+                    gl::Uniform1f(uniform_vertex, 0.2);
                     gl::DrawArrays(gl::TRIANGLES, 0, 3);
                 }
                 gl_window.swap_buffers().unwrap();
