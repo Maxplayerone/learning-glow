@@ -22,26 +22,24 @@ fn main() {
     // Load the OpenGL function pointers
     gl::load_with(|symbol| gl_window.get_proc_address(symbol));
 
-    let vertices: [f32; 18] = [
-        -0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 
-        0.5, -0.5, 0.0, 0.0, 1.0, 0.0,
-        0.0, 0.5, 0.0, 0.0, 0.0, 1.0,
-    ];   
-   
-    //the triangle is upside down
-    let vertices: [f32; 18] = [
-        0.0, -0.5, 0.0, 1.0, 0.0, 0.0, 
-        -0.5, 0.5, 0.0, 0.0, 1.0, 0.0,
-        0.5, 0.5, 0.0, 0.0, 0.0, 1.0,
+    let vertices: [f32; 32] = [
+        -0.5, -0.5, 0.0,    1.0, 0.0, 0.0, 0.0, 0.0,
+        0.5, -0.5, 0.0,     0.0, 1.0, 0.0, 1.0, 0.0,
+        -0.5, 0.5, 0.0,     0.0, 0.0, 1.0, 0.0, 1.0,
+        0.5, 0.5, 0.5,      1.0, 1.0, 0.0, 1.0, 1.0,
     ];
 
+    let indices: [u32; 6] = [
+        2, 0, 1,
+        2, 3, 1,
+    ];
 
     let program = Program::new("src/shaders/basic.vs", "src/shaders/basic.fs");
     let mut vbo = 0;
     let mut vao = 0;
+    let mut ebo = 0;
 
     let uniformLocation;
-    let uniform_vertex;
 
     unsafe {
         //vertex array object
@@ -53,14 +51,25 @@ fn main() {
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
         gl::BufferData(
             gl::ARRAY_BUFFER,
-            (18 * mem::size_of::<GLfloat>()) as GLsizeiptr,
+            (32 * mem::size_of::<GLfloat>()) as GLsizeiptr,
             mem::transmute(&vertices[0]),
+            gl::STATIC_DRAW,
+        );
+
+        //element buffer
+        gl::GenBuffers(1, &mut ebo);
+        gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+        gl::BufferData(
+            gl::ELEMENT_ARRAY_BUFFER,
+            (6 * mem::size_of::<GLuint>()) as GLsizeiptr,
+            mem::transmute(&indices[0]),
             gl::STATIC_DRAW,
         );
 
         //shader program
         program.bind();
         gl::BindFragDataLocation(program.id(), 0, CString::new("out_color").unwrap().as_ptr());
+
 
         //define the vertex buffer data
         gl::EnableVertexAttribArray(0);
@@ -69,7 +78,7 @@ fn main() {
             3,
             gl::FLOAT,
             gl::FALSE as GLboolean,
-            (6 * mem::size_of::<GLfloat>()).try_into().unwrap(),
+            (8 * mem::size_of::<GLfloat>()).try_into().unwrap(),
             ptr::null(),
         );
 
@@ -79,12 +88,22 @@ fn main() {
             3,                                                   //amount of data
             gl::FLOAT,                                           //type of data
             gl::FALSE as GLboolean, //should the data be normalized (changed to -1 to 1) values?
-            (6 * mem::size_of::<GLfloat>()).try_into().unwrap(), //how long (in bytes) is the amount of data
+            (8 * mem::size_of::<GLfloat>()).try_into().unwrap(), //how long (in bytes) is the amount of data
             mem::transmute(3 * mem::size_of::<GLfloat>()),
         );
 
-        uniformLocation = gl::GetUniformLocation(program.id(), CString::new("u_color").unwrap().as_ptr());
-        uniform_vertex = gl::GetUniformLocation(program.id(), CString::new("offset_value").unwrap().as_ptr());
+        gl::EnableVertexAttribArray(2);
+        gl::VertexAttribPointer(
+            2,
+            2,
+            gl::FLOAT,
+            gl::FALSE as GLboolean,
+            (8 * mem::size_of::<GLfloat>()).try_into().unwrap(),
+            mem::transmute(6 * mem::size_of::<GLfloat>()),
+        );
+
+        uniformLocation =
+            gl::GetUniformLocation(program.id(), CString::new("u_color").unwrap().as_ptr());
     }
 
     event_loop.run(move |event, _, control_flow| {
@@ -117,8 +136,7 @@ fn main() {
 
                     program.bind();
                     gl::Uniform4f(uniformLocation, 0.7, 0.4, 0.2, 1.0);
-                    gl::Uniform1f(uniform_vertex, 0.2);
-                    gl::DrawArrays(gl::TRIANGLES, 0, 3);
+                    gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
                 }
                 gl_window.swap_buffers().unwrap();
             }

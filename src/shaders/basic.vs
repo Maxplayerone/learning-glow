@@ -1,12 +1,13 @@
 #version 330
 layout (location=0) in vec3 position;
 layout (location=1) in vec3 a_color;
-
-uniform float offset_value;
+layout (location=2) in vec2 a_TexCoords;
 
 out vec3 f_color;
+out vec2 f_TexCoords;
 
 void main(){
     f_color = a_color;
-    gl_Position = vec4(position.x + offset_value, position.y, position.z, 1.0);
+    f_TexCoords = a_TexCoords;
+    gl_Position = vec4(position, 1.0);
 }

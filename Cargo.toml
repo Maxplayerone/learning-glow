@@ -6,5 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-glutin = "0.24"
+glutin = "0.29.1"
 gl = "0.14"
+image = "0.24.5"
+thiserror = "1.0"
