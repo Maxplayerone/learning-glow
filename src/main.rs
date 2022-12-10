@@ -26,25 +26,24 @@ fn main() {
     gl::load_with(|symbol| gl_window.get_proc_address(symbol));
 
     let vertices: [f32; 32] = [
-        -0.5, -0.5, 0.0,    1.0, 0.0, 0.0, 0.0, 0.0,
-        0.5, -0.5, 0.0,     0.0, 1.0, 0.0, 1.0, 0.0,
-        -0.5, 0.5, 0.0,     0.0, 0.0, 1.0, 0.0, 1.0,
-        0.5, 0.5, 0.5,      1.0, 1.0, 0.0, 1.0, 1.0,
+        -0.5, -0.5, 0.0,    1.0, 0.0, 0.0, 0.0, 1.0,
+        0.5, -0.5, 0.0,     0.0, 1.0, 0.0, 1.0, 1.0,
+        0.5, 0.5, 0.0,     0.0, 0.0, 1.0, 1.0, 0.0,
+        -0.5, 0.5, 0.0,      1.0, 1.0, 0.0, 0.0, 0.0,
     ];
 
     let indices: [u32; 6] = [
-        2, 0, 1,
-        2, 3, 1,
+        0, 1, 2,
+        2, 3, 0,
     ];
 
     let program = Program::new("src/shaders/basic.vs", "src/shaders/basic.fs");
     let mut vbo = 0;
     let mut vao = 0;
     let mut ebo = 0;
-    let mut texture = 0;
+    let mut texture0 = 0;
 
     let uniformLocation;
-    let uniform_tex_loc;
 
     unsafe {
         //vertex array object
@@ -108,30 +107,41 @@ fn main() {
         );
 
         //textures
-        gl::GenTextures(1, &mut texture);
-        gl::ActiveTexture(gl::TEXTURE0);
-        gl::BindTexture(gl::TEXTURE_2D, texture);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);   
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);   
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR_MIPMAP_LINEAR as i32);   
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);   
+            gl::GenTextures(1, &mut texture0);
+            //WRAPPING
+            gl::BindTexture(gl::TEXTURE_2D, texture0);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as GLint);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as GLint);
 
+            //FILTERING
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as GLint);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
 
-        let img = image::open(Path::new("src/assets/amogus.jpg")).unwrap().into_rgba8();
-        gl::TexImage2D(
-            gl::TEXTURE_2D,
-            0,
-            gl::RGBA as i32,
-            img.width() as i32,
-            img.height() as i32,
-            0,
-            gl::RGBA,
-            gl::UNSIGNED_BYTE,
-            img.as_bytes().as_ptr() as *const _, 
-        );
+            //IMAGE LOADING
+            let img = image::open(Path::new("src/assets/amogus.jpg")).unwrap().into_rgba8();
+            gl::TexImage2D(
+                gl::TEXTURE_2D,
+                0,
+                gl::RGBA as i32,
+                img.width() as i32,
+                img.height() as i32,
+                0,
+                gl::RGBA,
+                gl::UNSIGNED_BYTE,
+                img.as_bytes().as_ptr() as *const _,
+            );
+            gl::GenerateMipmap(gl::TEXTURE_2D);
+            
+            //UNIFORM
+            //aka bind
+            program.bind();
+            let uniform = CString::new("texture0").unwrap();
+            gl::Uniform1i(gl::GetUniformLocation(program.id(), uniform.as_ptr()), 0);
+
+            gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+            gl::Enable(gl::BLEND);
         
         uniformLocation = gl::GetUniformLocation(program.id(), CString::new("u_color").unwrap().as_ptr());
-        uniform_tex_loc = gl::GetUniformLocation(program.id(), CString::new("texture0").unwrap().as_ptr());
     }
 
     event_loop.run(move |event, _, control_flow| {
@@ -163,10 +173,10 @@ fn main() {
                     gl::Clear(gl::COLOR_BUFFER_BIT);
 
                     gl::ActiveTexture(gl::TEXTURE0);
-                    gl::BindTexture(gl::TEXTURE_2D, texture);
+                    gl::BindTexture(gl::TEXTURE_2D, texture0);
+
                     program.bind();
                     gl::Uniform4f(uniformLocation, 0.7, 0.4, 0.2, 1.0);
-                    gl::Uniform1i(uniform_tex_loc, 0);
                     gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
                 }
                 gl_window.swap_buffers().unwrap();
