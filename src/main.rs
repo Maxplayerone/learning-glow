@@ -4,8 +4,8 @@ extern crate glutin;
 use gl::types::*;
 use std::ffi::CString;
 use std::mem;
-use std::ptr;
 use std::path::Path;
+use std::ptr;
 
 use image::EncodableLayout;
 
@@ -26,22 +26,19 @@ fn main() {
     gl::load_with(|symbol| gl_window.get_proc_address(symbol));
 
     let vertices: [f32; 32] = [
-        -0.5, -0.5, 0.0,    1.0, 0.0, 0.0, 0.0, 1.0,
-        0.5, -0.5, 0.0,     0.0, 1.0, 0.0, 1.0, 1.0,
-        0.5, 0.5, 0.0,     0.0, 0.0, 1.0, 1.0, 0.0,
-        -0.5, 0.5, 0.0,      1.0, 1.0, 0.0, 0.0, 0.0,
+        -0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.5,
+        0.5, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, -0.5, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0,
     ];
 
-    let indices: [u32; 6] = [
-        0, 1, 2,
-        2, 3, 0,
-    ];
+    let indices: [u32; 6] = [0, 1, 2, 2, 3, 0];
 
     let program = Program::new("src/shaders/basic.vs", "src/shaders/basic.fs");
     let mut vbo = 0;
     let mut vao = 0;
     let mut ebo = 0;
+
     let mut texture0 = 0;
+    let mut texture1 = 0;
 
     let uniformLocation;
 
@@ -73,7 +70,6 @@ fn main() {
         //shader program
         program.bind();
         gl::BindFragDataLocation(program.id(), 0, CString::new("out_color").unwrap().as_ptr());
-
 
         //define the vertex buffer data
         gl::EnableVertexAttribArray(0);
@@ -107,41 +103,59 @@ fn main() {
         );
 
         //textures
-            gl::GenTextures(1, &mut texture0);
-            //WRAPPING
-            gl::BindTexture(gl::TEXTURE_2D, texture0);
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as GLint);
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as GLint);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
+        gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+        gl::Enable(gl::BLEND);
 
-            //FILTERING
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as GLint);
-            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
+        gl::GenTextures(1, &mut texture0);
+        gl::BindTexture(gl::TEXTURE_2D, texture0);
+        let img = image::open(Path::new("src/assets/cobblestone.png"))
+            .unwrap()
+            .into_rgba8();
+        gl::TexImage2D(
+            gl::TEXTURE_2D,
+            0,
+            gl::RGBA as i32,
+            img.width() as i32,
+            img.height() as i32,
+            0,
+            gl::RGBA,
+            gl::UNSIGNED_BYTE,
+            img.as_bytes().as_ptr() as *const _,
+        );
+        gl::GenerateMipmap(gl::TEXTURE_2D);
 
-            //IMAGE LOADING
-            let img = image::open(Path::new("src/assets/amogus.jpg")).unwrap().into_rgba8();
-            gl::TexImage2D(
-                gl::TEXTURE_2D,
-                0,
-                gl::RGBA as i32,
-                img.width() as i32,
-                img.height() as i32,
-                0,
-                gl::RGBA,
-                gl::UNSIGNED_BYTE,
-                img.as_bytes().as_ptr() as *const _,
-            );
-            gl::GenerateMipmap(gl::TEXTURE_2D);
-            
-            //UNIFORM
-            //aka bind
-            program.bind();
-            let uniform = CString::new("texture0").unwrap();
-            gl::Uniform1i(gl::GetUniformLocation(program.id(), uniform.as_ptr()), 0);
+        program.bind();
+        let uniform = CString::new("texture0").unwrap();
+        gl::Uniform1i(gl::GetUniformLocation(program.id(), uniform.as_ptr()), 0);
 
-            gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-            gl::Enable(gl::BLEND);
-        
-        uniformLocation = gl::GetUniformLocation(program.id(), CString::new("u_color").unwrap().as_ptr());
+        gl::GenTextures(1, &mut texture1);
+        gl::BindTexture(gl::TEXTURE_2D, texture1);
+        let img = image::open(Path::new("src/assets/trollface.png"))
+            .unwrap()
+            .into_rgba8();
+        gl::TexImage2D(
+            gl::TEXTURE_2D,
+            0,
+            gl::RGBA as i32,
+            img.width() as i32,
+            img.height() as i32,
+            0,
+            gl::RGBA,
+            gl::UNSIGNED_BYTE,
+            img.as_bytes().as_ptr() as *const _,
+        );
+        gl::GenerateMipmap(gl::TEXTURE_2D);
+
+        program.bind();
+        let uniform = CString::new("texture1").unwrap();
+        gl::Uniform1i(gl::GetUniformLocation(program.id(), uniform.as_ptr()), 1);
+
+        uniformLocation =
+            gl::GetUniformLocation(program.id(), CString::new("u_color").unwrap().as_ptr());
     }
 
     event_loop.run(move |event, _, control_flow| {
@@ -174,6 +188,8 @@ fn main() {
 
                     gl::ActiveTexture(gl::TEXTURE0);
                     gl::BindTexture(gl::TEXTURE_2D, texture0);
+                    gl::ActiveTexture(gl::TEXTURE1);
+                    gl::BindTexture(gl::TEXTURE_2D, texture1);
 
                     program.bind();
                     gl::Uniform4f(uniformLocation, 0.7, 0.4, 0.2, 1.0);

@@ -3,9 +3,9 @@ extern crate glutin;
 
 use gl::types::*;
 use std::ffi::CString;
+use std::fs;
 use std::ptr;
 use std::str;
-use std::fs;
 
 pub struct Program {
     id: u32,
@@ -81,13 +81,12 @@ fn link_program(vs: GLuint, fs: GLuint) -> GLuint {
 }
 
 impl Program {
-    pub fn new(vertex_src : &str, fragment_src : &str) -> Self {
+    pub fn new(vertex_src: &str, fragment_src: &str) -> Self {
+        let vs_src =
+            fs::read_to_string(vertex_src).expect("Should have been able to read the file");
 
-        let vs_src = fs::read_to_string(vertex_src)
-        .expect("Should have been able to read the file");
-
-        let fs_src = fs::read_to_string(fragment_src)
-        .expect("Should have been able to read the file");
+        let fs_src =
+            fs::read_to_string(fragment_src).expect("Should have been able to read the file");
 
         let vs = compile_shader(&vs_src, gl::VERTEX_SHADER);
         let fs = compile_shader(&fs_src, gl::FRAGMENT_SHADER);
@@ -106,4 +105,3 @@ impl Program {
         }
     }
 }
-
