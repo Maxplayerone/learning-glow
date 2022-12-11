@@ -26,11 +26,56 @@ fn main() {
     // Load the OpenGL function pointers
     gl::load_with(|symbol| gl_window.get_proc_address(symbol));
 
+    /*
     let vertices: [f32; 32] = [
         -0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 
         0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 
         0.5, 0.5, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 
         -0.5, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0,
+    ];
+    */
+    let vertices: [f32; 160] = [
+    -0.5, -0.5, -0.5,  0.0, 0.0,
+     0.5, -0.5, -0.5,  1.0, 0.0,
+     0.5,  0.5, -0.5,  1.0, 1.0,
+     0.5,  0.5, -0.5,  1.0, 1.0,
+    -0.5,  0.5, -0.5,  0.0, 1.0,
+    -0.5, -0.5, -0.5,  0.0, 0.0,
+
+    -0.5, -0.5,  0.5,  0.0, 0.0,
+     0.5, -0.5,  0.5,  1.0, 0.0,
+     0.5,  0.5,  0.5,  1.0, 1.0,
+     0.5,  0.5,  0.5,  1.0, 1.0,
+    -0.5,  0.5,  0.5,  0.0, 1.0,
+    -0.5, -0.5,  0.5,  0.0, 0.0,
+
+    -0.5,  0.5,  0.5,  1.0, 0.0,
+    -0.5,  0.5, -0.5,  1.0, 1.0,
+    -0.5, -0.5, -0.5,  0.0, 1.0,
+    -0.5, -0.5, -0.5,  0.0, 1.0,
+    -0.5, -0.5,  0.5,  0.0, 0.0,
+    -0.5,  0.5,  0.5,  1.0, 0.0,
+
+     0.5,  0.5,  0.5,  1.0, 0.0,
+     0.5,  0.5, -0.5,  1.0, 1.0,
+     0.5, -0.5, -0.5,  0.0, 1.0,
+     0.5, -0.5, -0.5,  0.0, 1.0,
+     0.5, -0.5,  0.5,  0.0, 0.0,
+     0.5,  0.5,  0.5,  1.0, 0.0,
+
+    -0.5, -0.5, -0.5,  0.0, 1.0,
+     0.5, -0.5, -0.5,  1.0, 1.0,
+     0.5, -0.5,  0.5,  1.0, 0.0,
+     0.5, -0.5,  0.5,  1.0, 0.0,
+    -0.5, -0.5,  0.5,  0.0, 0.0,
+    -0.5, -0.5, -0.5,  0.0, 1.0,
+
+    -0.5,  0.5, -0.5,  0.0, 1.0,
+     0.5,  0.5, -0.5,  1.0, 1.0,
+     0.5,  0.5,  0.5,  1.0, 0.0,
+     0.5,  0.5,  0.5,  1.0, 0.0,
+    -0.5,  0.5,  0.5,  0.0, 0.0,
+    -0.5,  0.5, -0.5,  0.0, 1.0
     ];
 
     let indices: [u32; 6] = [0, 1, 2, 2, 3, 0];
@@ -45,10 +90,16 @@ fn main() {
 
     let uni_color;
 
-    let mut test_mat = math::Mat4::new(1.0);
-    //test_mat.scale(0.5);
-    //test_mat.transform(math::Vec3::new(0.5, 0.25, 0.0));
-    //test_mat.rotate(45.0);
+    let mut model = math::Mat4::new(1.0);
+    model.rotate(-55.0, math::RotationAxis::X);
+    model.transpose();
+
+    let mut view = math::Mat4::new(1.0);
+    view.translate(math::Vec3::new(0.0, 0.0, 1.0));
+
+    let mut projection = math::Mat4::new(1.0);
+    //projection.perspective(45.0, 800.0/600.0, 0.1, 100.0);
+    //projection.transpose();
 
     unsafe {
         //vertex array object
@@ -74,11 +125,6 @@ fn main() {
             mem::transmute(&indices[0]),
             gl::STATIC_DRAW,
         );
-
-        //shader program
-        program.bind();
-        let uniform = CString::new("out_color").unwrap();
-        gl::BindFragDataLocation(program.id(), 0, uniform.as_ptr());
 
         //define the vertex buffer data
         gl::EnableVertexAttribArray(0);
@@ -111,6 +157,7 @@ fn main() {
             mem::transmute(6 * mem::size_of::<GLfloat>()),
         );
 
+
         //textures
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as GLint);
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as GLint);
@@ -118,6 +165,10 @@ fn main() {
         gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as GLint);
         gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
         gl::Enable(gl::BLEND);
+
+        program.bind();
+        let uniform = CString::new("out_color").unwrap();
+        gl::BindFragDataLocation(program.id(), 0, uniform.as_ptr());
 
         gl::GenTextures(1, &mut texture0);
         gl::BindTexture(gl::TEXTURE_2D, texture0);
@@ -137,7 +188,6 @@ fn main() {
         );
         gl::GenerateMipmap(gl::TEXTURE_2D);
 
-        program.bind();
         let uniform = CString::new("texture0").unwrap();
         gl::Uniform1i(gl::GetUniformLocation(program.id(), uniform.as_ptr()), 0);
 
@@ -159,7 +209,6 @@ fn main() {
         );
         gl::GenerateMipmap(gl::TEXTURE_2D);
 
-        program.bind();
         let uniform = CString::new("texture1").unwrap();
         gl::Uniform1i(gl::GetUniformLocation(program.id(), uniform.as_ptr()), 1);
 
@@ -167,13 +216,29 @@ fn main() {
         uni_color = gl::GetUniformLocation(program.id(), uniform.as_ptr());
         gl::Uniform4f(uni_color, 0.7, 0.4, 0.2, 1.0);
 
-        let uniform = CString::new("cool_matrix").unwrap();
+        let uniform = CString::new("model").unwrap();
 
         gl::UniformMatrix4fv(
             gl::GetUniformLocation(program.id(), uniform.as_ptr()),
             1,
             gl::FALSE,
-            &test_mat.mat[0]);
+            &model.mat[0]);
+
+        let uniform = CString::new("view").unwrap();
+        gl::UniformMatrix4fv(
+            gl::GetUniformLocation(program.id(), uniform.as_ptr()),
+            1,
+            gl::FALSE,
+            &view.mat[0]
+        );
+
+        let uniform = CString::new("projection").unwrap();
+        gl::UniformMatrix4fv(
+            gl::GetUniformLocation(program.id(), uniform.as_ptr()),
+            1,
+            gl::FALSE,
+            &projection.mat[0]
+        );
     }
 
     event_loop.run(move |event, _, control_flow| {
@@ -208,7 +273,6 @@ fn main() {
                     gl::BindTexture(gl::TEXTURE_2D, texture0);
                     gl::ActiveTexture(gl::TEXTURE1);
                     gl::BindTexture(gl::TEXTURE_2D, texture1);
-
                     gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
                 }
                 gl_window.swap_buffers().unwrap();
