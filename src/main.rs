@@ -9,8 +9,9 @@ use std::ptr;
 
 use image::EncodableLayout;
 
-pub mod Shaders;
-use Shaders::Program;
+pub mod shaders;
+pub mod math;
+use shaders::Program;
 
 fn main() {
     let event_loop = glutin::event_loop::EventLoop::new();
@@ -26,8 +27,10 @@ fn main() {
     gl::load_with(|symbol| gl_window.get_proc_address(symbol));
 
     let vertices: [f32; 32] = [
-        -0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.5,
-        0.5, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, -0.5, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0,
+        -0.5, -0.5, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 
+        0.5, -0.5, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 
+        0.5, 0.5, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 
+        -0.5, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0,
     ];
 
     let indices: [u32; 6] = [0, 1, 2, 2, 3, 0];
@@ -40,7 +43,12 @@ fn main() {
     let mut texture0 = 0;
     let mut texture1 = 0;
 
-    let uniformLocation;
+    let uni_color;
+
+    let mut test_mat = math::Mat4::new(1.0);
+    //test_mat.scale(0.5);
+    //test_mat.transform(math::Vec3::new(0.5, 0.25, 0.0));
+    //test_mat.rotate(45.0);
 
     unsafe {
         //vertex array object
@@ -69,7 +77,8 @@ fn main() {
 
         //shader program
         program.bind();
-        gl::BindFragDataLocation(program.id(), 0, CString::new("out_color").unwrap().as_ptr());
+        let uniform = CString::new("out_color").unwrap();
+        gl::BindFragDataLocation(program.id(), 0, uniform.as_ptr());
 
         //define the vertex buffer data
         gl::EnableVertexAttribArray(0);
@@ -154,8 +163,17 @@ fn main() {
         let uniform = CString::new("texture1").unwrap();
         gl::Uniform1i(gl::GetUniformLocation(program.id(), uniform.as_ptr()), 1);
 
-        uniformLocation =
-            gl::GetUniformLocation(program.id(), CString::new("u_color").unwrap().as_ptr());
+        let uniform = CString::new("u_color").unwrap();
+        uni_color = gl::GetUniformLocation(program.id(), uniform.as_ptr());
+        gl::Uniform4f(uni_color, 0.7, 0.4, 0.2, 1.0);
+
+        let uniform = CString::new("cool_matrix").unwrap();
+
+        gl::UniformMatrix4fv(
+            gl::GetUniformLocation(program.id(), uniform.as_ptr()),
+            1,
+            gl::FALSE,
+            &test_mat.mat[0]);
     }
 
     event_loop.run(move |event, _, control_flow| {
@@ -191,8 +209,6 @@ fn main() {
                     gl::ActiveTexture(gl::TEXTURE1);
                     gl::BindTexture(gl::TEXTURE_2D, texture1);
 
-                    program.bind();
-                    gl::Uniform4f(uniformLocation, 0.7, 0.4, 0.2, 1.0);
                     gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
                 }
                 gl_window.swap_buffers().unwrap();
